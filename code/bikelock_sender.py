@@ -6,7 +6,11 @@ import network
 #esp now set up
 wlan = network.WLAN(network.STA_IF)
 wlan.active(True)
-espnow.init()
+wlan.disconnect()
+e = espnow.ESPNow()
+e.active(True)
+
+
 
 #mac address of receiver
 receiver_mac = b'\x14\x2b\x2f\xaf\x5a\x80'
@@ -14,7 +18,7 @@ receiver_mac = b'\x14\x2b\x2f\xaf\x5a\x80'
 servo_pin = Pin(19, Pin.OUT)
 
 def send_message(message):
-    espnow.send(receiver_mac, message)
+    e.send(receiver_mac, message)
     
 while True:
     command = input("Enter command (unlock/lock): ")  # Input for unlock/lock

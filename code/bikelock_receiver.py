@@ -6,7 +6,11 @@ import network
 #esp now initialize
 wlan = network.WLAN(network.STA_IF)
 wlan.active(True)
-espnow.init()
+wlan.disconnect()
+e = espnow.ESPNow()
+e.active(True)
+
+
 
 servo = Pin(21, Pin.OUT)
 
@@ -21,7 +25,7 @@ def set_servo_state(state):
 
 # receive commands from esp32
 while True:
-    message = espnow.recv()
+    message = e.recv()
     if message:
         command = message[0].decode('utf-8')
         print("Received command:", command)
