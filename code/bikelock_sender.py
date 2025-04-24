@@ -9,7 +9,7 @@ wlan.active(True)
 espnow.init()
 
 #mac address of receiver
-receiver_mac = b'\x24\x6F\x28\x89\x5D\xA1'
+receiver_mac = b'\x14\x2b\x2f\xaf\x5a\x80'
 
 servo_pin = Pin(19, Pin.OUT)
 
