@@ -7,6 +7,7 @@ import network
 wlan = network.WLAN(network.STA_IF)
 wlan.active(True)
 wlan.disconnect()
+wlan.config(channel=1)
 e = espnow.ESPNow()
 e.active(True)
 
@@ -14,7 +15,7 @@ e.active(True)
 
 #mac address of receiver
 receiver_mac = b'\x14\x2b\x2f\xaf\x5a\x80'
-
+e.add_receiver_mac(receiver_mac)
 servo_pin = Pin(19, Pin.OUT)
 
 def send_message(message):

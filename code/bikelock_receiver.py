@@ -7,6 +7,7 @@ import network
 wlan = network.WLAN(network.STA_IF)
 wlan.active(True)
 wlan.disconnect()
+wlan.config(channel=1)
 e = espnow.ESPNow()
 e.active(True)
 
