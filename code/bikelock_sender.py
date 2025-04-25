@@ -15,8 +15,8 @@ e.active(True)
 
 #mac address of receiver
 receiver_mac = b'\x14\x2b\x2f\xaf\x5a\x80'
-e.add_receiver_mac(receiver_mac)
-servo_pin = Pin(19, Pin.OUT)
+e.add_peer(receiver_mac)
+servo_pin = Pin(22, Pin.OUT)
 
 def send_message(message):
     e.send(receiver_mac, message)

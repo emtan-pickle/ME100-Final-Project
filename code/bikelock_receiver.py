@@ -1,6 +1,6 @@
 import time
 import espnow
-from machine import Pin
+from machine import PWM, Pin
 import network
 
 #esp now initialize
@@ -13,22 +13,29 @@ e.active(True)
 
 
 
-servo = Pin(21, Pin.OUT)
+servo = PWM(Pin(22), freq=50)
 
 # lock/unlock servo
 def set_servo_state(state):
     if state == 'unlock':
-        servo.on()
+        servo.duty(77)  # Adjust duty for 'unlock', e.g., 2ms pulse (~12.5% duty)
         print("Unlocked")
     elif state == 'lock':
-        servo.off()
+        servo.duty(40)  # Adjust duty for 'lock', e.g., 1ms pulse (~5% duty)
         print("Locked")
 
 # receive commands from esp32
 while True:
     message = e.recv()
     if message:
-        command = message[0].decode('utf-8')
-        print("Received command:", command)
-        set_servo_state(command)
+        if len(message) == 2:
+            mac, raw_data = message
+        else:
+            raw_data = message[0]
+        try:
+            command = raw_data.decode('utf-8')  # <-- Correct decoding target
+            print("Received command:", command)
+            set_servo_state(command)
+        except UnicodeError:
+            print("Received non-UTF-8 data:", raw_data)
     time.sleep(1)
