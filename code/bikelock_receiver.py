@@ -18,10 +18,10 @@ servo = PWM(Pin(22), freq=50)
 # lock/unlock servo
 def set_servo_state(state):
     if state == 'unlock':
-        servo.duty(77)  # Adjust duty for 'unlock', e.g., 2ms pulse (~12.5% duty)
+        servo.duty(77)  # Adjust duty for 'unlock'
         print("Unlocked")
     elif state == 'lock':
-        servo.duty(40)  # Adjust duty for 'lock', e.g., 1ms pulse (~5% duty)
+        servo.duty(40)  # Adjust duty for 'lock'
         print("Locked")
 
 # receive commands from esp32
@@ -33,7 +33,7 @@ while True:
         else:
             raw_data = message[0]
         try:
-            command = raw_data.decode('utf-8')  # <-- Correct decoding target
+            command = raw_data.decode('utf-8') 
             print("Received command:", command)
             set_servo_state(command)
         except UnicodeError:
