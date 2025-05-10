@@ -1,24 +1,41 @@
-import socket , network
+import socket
+import network
+import espnow
 from machine import Pin, PWM
 from time import sleep
 
-#NOTE: this code references an existing github repository at certain points which i will paste here: https://gist.github.com/cyrusmeh/901249c60a64eda9ae124b2d1e20cd4e
+# --------------------------
+# Set ESP32 as Access Point
+# --------------------------
+ap = network.WLAN(network.AP_IF)
+ap.active(True)
+ap.config(essid='JEMs-Bike-Lock', password='supersecretpassword123', authmode=network.AUTH_WPA2_PSK)
 
-ssid = 'Berkeley-IoT' #shared wifi name
-password = 'v1+4wUMm' #ESP wifi password
-sta = network.WLAN(network.STA_IF) #setting ESP as a wifi station
-sta.active(True) #activating ESP wifi station
-sta.connect(ssid , password) #ESP connects to router thru using ssid and password
-while sta.isconnected() == False : #if no wifi connection, rest of the code will be null
+while not ap.active():
     pass
-print('connection successful ')
-print(sta.ifconfig())
 
-servo = PWM(Pin(22), freq=50) #creating pin object called servo that is connected to gpio22 or sda on ESP
+print('Access Point ready')
+print('Connect to: JEMs-Bike-Lock')
+print('Password: supersecretpassword123')
+print('Go to: http://192.168.4.1')
 
-lock_state = "LOCK" #general lock state when not called upon
+e = espnow.ESPNow()
+e.init()
+tamper_status = False
+# --------------------------
+# Servo Setup
+# --------------------------
+servo = PWM(Pin(22), freq=50)
+lock_state = "LOCK"
 
-def set_servo_state(state): #function to define the lock state of servo and defines how much the servo will turn
+def tamper_check():
+    global tamper_status
+    if e.poll():
+        peer, msg = e.recv()
+        if msg = b"tamper":
+            print("There is tampering on your lock!")
+            tamper_status = True
+def set_servo_state(state):
     global lock_state
     if state == 'unlock':
         servo.duty(102)
@@ -30,8 +47,11 @@ def set_servo_state(state): #function to define the lock state of servo and defi
         lock_state = "LOCK"
         print("Locked")
         sleep(0.5)
-        
-def web_page(): #this variable defines the web page. we will use HTML, CSS, and JS to generate the look of the website. we use + lock_state + to send a signal to the gpio22 pin which will let the servo know whether to unlock or lock
+
+# --------------------------
+# Web Page (exact styling from your code)
+# --------------------------
+def web_page():
     html = """<html>
         <head>
             <title>JEM's Very Secure and Awesome and Cool and the Best Bike Lock 🚲🔒</title>
@@ -47,18 +67,15 @@ def web_page(): #this variable defines the web page. we will use HTML, CSS, and 
                     margin: 0;
                     padding: 0;
                 }
-
                 h1 {
                     color: #FF92A5;
                     font-size: 2.5em;
                     margin-top: 3vh;
                 }
-
                 p {
                     font-size: 1.4rem;
                     color: #555;
                 }
-
                 .button {
                     background-color: #A8DADC;
                     border: none;
@@ -72,26 +89,21 @@ def web_page(): #this variable defines the web page. we will use HTML, CSS, and 
                     transition: all 0.3s ease;
                     box-shadow: 2px 2px 8px rgba(0,0,0,0.15);
                 }
-
                 .button:hover {
                     background-color: #74C69D;
                     transform: scale(1.05);
                 }
-
                 .button2 {
                     background-color: #FFD6A5;
                     color: #6A4C93;
                 }
-
                 .button2:hover {
                     background-color: #FFB5A7;
                 }
-
                 strong {
                     color: #FF8FAB;
                     font-size: 1.6rem;
                 }
-
                 .container {
                     padding: 3vh;
                     max-width: 600px;
@@ -114,12 +126,10 @@ def web_page(): #this variable defines the web page. we will use HTML, CSS, and 
                     margin-right: auto;
                     animation: blink-caret 0.75s step-end infinite;
                 }
-
                 @keyframes blink-caret {
                     from, to { border-color: transparent }
                     50% { border-color: #6A4C93; }
                 }
-
             </style>
         </head>
         <body>
@@ -146,33 +156,32 @@ def web_page(): #this variable defines the web page. we will use HTML, CSS, and 
                     setTimeout(typeWriter, 75);
                 }
               }
-               window.onload = typeWriter;
+              window.onload = typeWriter;
             </script>
+            if tamper_status:
+                html += "<p style='color:red; font-size:1.5em;'>🚨 TAMPERING DETECTED!</p>"
         </body>
     </html>"""
     return html
 
-# create a socket using socket.socket(), and specify the socket type. we create a new socket object called s with the given address family, and socket type. this is a STREAM TPC socket:
-s = socket.socket(socket.AF_INET , socket.SOCK_STREAM)
-# the bind() method accepts a tupple variable with the ip address, and port number:
-s.bind(('' ,80))
-#enables the server to accept connections; it makes a "listening" socket. the argument specifies the maximum number of queued connections. the maximum is 5.
+# --------------------------
+# Web Server Loop
+# --------------------------
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.bind(('', 80))
 s.listen(5)
+
 while True:
-#when a client connects, it saves a new socket object to accept and send data on the conn variable, and saves the client address to connect to the server on the addr variable.
-    conn , addr = s.accept()
-#the following line gets the request recieved onthe newly created socket and saves it in the request variable.
+    conn, addr = s.accept()
+    print('Client connected from:', addr)
     request = conn.recv(1024)
     request = str(request)
-    action_unlock = request.find('/?action=unlock')
-    action_lock = request.find('/?action=lock')
 
-    if action_unlock == 6:
+    if '/?action=unlock' in request:
         set_servo_state('unlock')
-
-    if action_lock == 6:
+    elif '/?action=lock' in request:
         set_servo_state('lock')
-        
+    
+    check_for_tamper()
     conn.sendall(web_page())
-#in the end, close the created socket.
     conn.close()
